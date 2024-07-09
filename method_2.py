@@ -1,8 +1,10 @@
 """
 Method on uses jax for auto diff and newton's method for optimization
 """
+import time
 import numpy as np
-from jax import jit, grad, jacfwd, jacrev
+from jax import jit, value_and_grad, hessian
+from jax.scipy.linalg import solve
 import jax.numpy as jnp
 
 @jit
@@ -27,26 +29,33 @@ def method_2(matchups):
     num_models = np.unique(matchups).shape[0]
 
     ratings = jnp.zeros(num_models)
-    grad_fn = grad(bt_loss)
-    hess_fn = jacfwd(grad_fn)
+    loss_and_grad_fn = value_and_grad(bt_loss)
+    hess_fn = hessian(bt_loss)
 
-    num_iter = 200
-    tol = 1e-6
+    tol = 1e-8
 
+    done = False
     prev_loss = jnp.inf
-    for i in range(num_iter):
-        loss = bt_loss(ratings, matchups)
-        print(f"iter {i} loss: {loss}")
-        gradient = grad_fn(ratings, matchups)
-        hessian = hess_fn(ratings, matchups)
-        update = jnp.linalg.inv(hessian).dot(gradient)
-        ratings = ratings - update
-        if jnp.abs(prev_loss - loss) < tol:
-            break
-        prev_loss = loss
+    i = 0
 
+    start_time = time.time()
+    while not done:
+        loss, gradient = loss_and_grad_fn(ratings, matchups)
+        print(f"iter {i+1} loss: {loss}")
+        hess = hess_fn(ratings, matchups)
+        update = solve(hess, gradient, assume_a="sym")
+        # update = np_solve(hess, gradient
+        # update = jnp.linalg.inv(hess).dot(gradient)
+        ratings = ratings - update
+        if jnp.abs(prev_loss - loss) <= tol:
+            done = True
+        prev_loss = loss
+        i += 1
+    duration = time.time() - start_time
     acc = accuracy(ratings, matchups)
     print(f"accuracy: {acc}")
+    print(f"duration (s): {duration:.4f}")
+
 
     
 
