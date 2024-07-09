@@ -1,0 +1,8 @@
+polars
+numpy
+scipy
+numba
+torch
+jax
+matplotlib
+requests
