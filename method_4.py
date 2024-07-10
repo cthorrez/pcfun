@@ -1,5 +1,5 @@
 """
-Method on uses vectorized numpy for loss and grad, scipy L-BFGS for opt
+Method on uses scikit-learn LogisticRegression to fit the Bradley Terry model
 """
 
 import time
