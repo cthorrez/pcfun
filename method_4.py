@@ -6,6 +6,25 @@ import time
 import numpy as np
 from scipy.optimize import minimize
 from scipy.special import expit
+from sklearn.linear_model import LogisticRegression
+
+def preprocess(matchups):
+    num_models = np.unique(matchups).shape[0]
+    unique_matchups, counts = np.unique(matchups, return_counts=True, axis=0)
+    num_unique_matchups = unique_matchups.shape[0]
+
+    X = np.zeros(shape=(num_unique_matchups, num_models))
+    y = np.ones(shape=(num_unique_matchups))
+    weights = counts.astype(np.float32)
+
+    X[np.arange(num_unique_matchups), unique_matchups[:,0]] = 1.0
+    X[np.arange(num_unique_matchups), unique_matchups[:,1]] = -1.0
+
+    mask = (np.arange(num_unique_matchups) % 2) == 1
+    X[mask] *= -1
+    y[mask] = 0.0
+
+    return X, y, weights
 
 
 
@@ -30,24 +49,29 @@ def accuracy(ratings, matchups):
     return np.mean(probs > 0.5)
 
 
-def method_1(matchups):
+def method_4(matchups):
+
     start_time = time.time()
-    num_models = np.unique(matchups).shape[0]
-    ratings = np.zeros(num_models)
-    ratings = minimize(
-        fun=bt_loss_and_grad,
-        x0=ratings,
-        args = (matchups,),
-        method='L-BFGS-B',
-        jac=True,
-        options={'disp' : True}
-    )['x']
+    X, y, weights = preprocess(matchups)
+    model = LogisticRegression(fit_intercept=False, penalty=None, tol=1e-12)
+
+    # start_time = time.time()
+    model.fit(X=X, y=y, sample_weight=weights)
     duration = time.time() - start_time
-    print(f"accuracy: {accuracy(ratings, matchups)}")
-    print(f"duration (s) {duration:.4f}")
+
+    ratings = model.coef_[0]
+
+    acc = accuracy(ratings, matchups)
+    loss, _ = bt_loss_and_grad(ratings, matchups)
+    print(f'log loss: {loss}')
+    print(f'accuracy: {acc}')
+    print(f'duration (s): {duration:.4f}')
+
+
 
 
 
 if __name__ == "__main__":
     matchups = np.load("data/matchups.npz")["matchups"]
-    method_1(matchups)
+
+    method_4(matchups)

@@ -4,5 +4,6 @@ scipy
 numba
 torch
 jax
+scikit-learn
 matplotlib
 requests
