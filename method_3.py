@@ -58,5 +58,5 @@ if __name__ == "__main__":
     device="cpu"
 
 
-    matchups = torch.tensor(matchups, dtype=torch.int32, device=device)
+    matchups = torch.tensor(matchups, dtype=torch.int64, device=device)
     method_3(matchups, device=device)
